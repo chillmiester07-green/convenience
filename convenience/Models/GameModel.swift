@@ -87,6 +87,7 @@ final class GameModel {
         }
         if let index = index(of: card) {
             setState(.revealed, at: index, side: card.side)
+            soundPlayer.playFlip()
         }
 
         guard let left = leftCards.first(where: { $0.state == .revealed }),
