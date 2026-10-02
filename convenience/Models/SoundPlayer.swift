@@ -5,9 +5,11 @@ import UIKit
 @MainActor
 final class SoundPlayer {
     private static let flipSoundName = "sound/jump"
+    private static let matchSoundName = "sound/punch"
 
     private var player: AVAudioPlayer?
     private lazy var flipPlayer: AVAudioPlayer? = makePlayer(for: Self.flipSoundName)
+    private lazy var matchPlayer: AVAudioPlayer? = makePlayer(for: Self.matchSoundName)
 
     /// Plays a pack's sound, replacing whatever was playing.
     func play(_ soundName: String) {
@@ -25,6 +27,12 @@ final class SoundPlayer {
     func playFlip() {
         flipPlayer?.currentTime = 0
         flipPlayer?.play()
+    }
+
+    /// Plays the match sound from the start, even if it is still sounding.
+    func playMatch() {
+        matchPlayer?.currentTime = 0
+        matchPlayer?.play()
     }
 
     private func makePlayer(for soundName: String) -> AVAudioPlayer? {

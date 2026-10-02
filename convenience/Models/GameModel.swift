@@ -109,6 +109,7 @@ final class GameModel {
                 set(.matched, for: left)
                 set(.matched, for: right)
             }
+            soundPlayer.playMatch()
             matchedPairs += 1
             matchCount += 1
             isResolving = false
