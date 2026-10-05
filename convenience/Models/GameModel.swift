@@ -13,7 +13,7 @@ enum GamePhase {
 final class GameModel {
     static let firstLevelPairs = 4
     static let pairsAddedPerLevel = 1
-    static let firstLevelSeconds = 15.0
+    static let firstLevelSeconds = 20.0
     static let secondsAddedPerLevel = 5.0
 
     private(set) var phase = GamePhase.menu
@@ -96,8 +96,8 @@ final class GameModel {
         matchedPairs = 0
 
         let names = Array(pack.imageNames.shuffled().prefix(pairsInLevel))
-        leftCards = names.shuffled().map { Card(imageName: $0, side: .left, coverName: pack.coverName) }
-        rightCards = names.shuffled().map { Card(imageName: $0, side: .right, coverName: pack.coverName) }
+        leftCards = names.shuffled().map { Card(imageName: $0, side: .left, coverName: pack.cardBackName) }
+        rightCards = names.shuffled().map { Card(imageName: $0, side: .right, coverName: pack.cardBackName) }
         phase = .playing
         startTimer()
     }
