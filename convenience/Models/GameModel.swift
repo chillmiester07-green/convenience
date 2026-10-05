@@ -6,12 +6,15 @@ enum GamePhase {
     case packSelect
     case playing
     case levelComplete
+    case failed
 }
 
 @Observable
 final class GameModel {
     static let firstLevelPairs = 4
-    static let pairsAddedPerLevel = 2
+    static let pairsAddedPerLevel = 1
+    static let firstLevelSeconds = 15.0
+    static let secondsAddedPerLevel = 5.0
 
     private(set) var phase = GamePhase.menu
     private(set) var level = 1
@@ -24,12 +27,27 @@ final class GameModel {
     private(set) var matchCount = 0
     private(set) var missCount = 0
 
+    /// When the current level's countdown began, and when it was frozen (win or loss).
+    private(set) var timerStart = Date.now
+    private(set) var timerEnd: Date?
+
     private let soundPlayer = SoundPlayer()
     private var isResolving = false
     private var resolveTask: Task<Void, Never>?
+    private var timerTask: Task<Void, Never>?
 
     var pairsInLevel: Int {
         min(Self.firstLevelPairs + (level - 1) * Self.pairsAddedPerLevel, pack.imageNames.count)
+    }
+
+    var timeLimit: Double {
+        Self.firstLevelSeconds + Double(level - 1) * Self.secondsAddedPerLevel
+    }
+
+    /// Fraction of time left, from 1 (full) to 0 (out of time).
+    func timeRemainingFraction(at date: Date) -> Double {
+        let elapsed = (timerEnd ?? date).timeIntervalSince(timerStart)
+        return min(1, max(0, 1 - elapsed / timeLimit))
     }
 
     var isFinalSize: Bool {
@@ -41,6 +59,7 @@ final class GameModel {
     func showPackSelect() {
         soundPlayer.stop()
         resolveTask?.cancel()
+        timerTask?.cancel()
         isResolving = false
         phase = .packSelect
     }
@@ -56,9 +75,14 @@ final class GameModel {
         startLevel()
     }
 
+    func retryLevel() {
+        startLevel()
+    }
+
     func goToMenu() {
         soundPlayer.stop()
         resolveTask?.cancel()
+        timerTask?.cancel()
         isResolving = false
         phase = .menu
     }
@@ -66,6 +90,7 @@ final class GameModel {
     private func startLevel() {
         soundPlayer.stop()
         resolveTask?.cancel()
+        timerTask?.cancel()
         isResolving = false
         tries = 0
         matchedPairs = 0
@@ -74,6 +99,29 @@ final class GameModel {
         leftCards = names.shuffled().map { Card(imageName: $0, side: .left, coverName: pack.coverName) }
         rightCards = names.shuffled().map { Card(imageName: $0, side: .right, coverName: pack.coverName) }
         phase = .playing
+        startTimer()
+    }
+
+    private func startTimer() {
+        let limit = timeLimit
+        timerStart = .now
+        timerEnd = nil
+        timerTask = Task {
+            try? await Task.sleep(for: .seconds(limit))
+            guard !Task.isCancelled else { return }
+            timeRanOut()
+        }
+    }
+
+    private func timeRanOut() {
+        guard phase == .playing, matchedPairs < pairsInLevel else { return }
+        timerEnd = .now
+        resolveTask?.cancel()
+        isResolving = false
+        soundPlayer.stop()
+        withAnimation(.spring(duration: 0.6, bounce: 0.4)) {
+            phase = .failed
+        }
     }
 
     // MARK: - Playing
@@ -115,6 +163,8 @@ final class GameModel {
             isResolving = false
 
             if matchedPairs == pairsInLevel {
+                timerTask?.cancel()
+                timerEnd = .now
                 try? await Task.sleep(for: .milliseconds(1100))
                 guard !Task.isCancelled else { return }
                 soundPlayer.play(pack.soundName)

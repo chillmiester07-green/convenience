@@ -14,6 +14,9 @@ struct GameView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
+            TimerBarView()
+                .padding(.horizontal)
+
             HStack(spacing: 20) {
                 BoardView(cards: game.leftCards, onSelect: game.select)
                     .id(game.level)

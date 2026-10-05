@@ -14,13 +14,18 @@ struct RootView: View {
             case .packSelect:
                 PackSelectView()
                     .transition(.move(edge: .trailing).combined(with: .opacity))
-            case .playing, .levelComplete:
+            case .playing, .levelComplete, .failed:
                 GameView()
                     .transition(.opacity)
             }
 
             if game.phase == .levelComplete {
                 LevelCompleteView()
+                    .transition(.opacity)
+            }
+
+            if game.phase == .failed {
+                TimeUpView()
                     .transition(.opacity)
             }
         }
@@ -31,7 +36,7 @@ struct RootView: View {
         switch game.phase {
         case .menu: 2
         case .packSelect: 4
-        case .playing, .levelComplete: game.level + 4
+        case .playing, .levelComplete, .failed: game.level + 4
         }
     }
 }
